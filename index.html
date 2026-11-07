@@ -34,8 +34,8 @@
         </section>
 
         <section class="audio-controls">
-            <!-- Enlace exacto con el puerto 8000 y formato mp3 según butt -->
-            <audio id="audio-player" src="http://yanapak.org:8000/kradio.mp3"></audio>
+            <!-- Enlace seguro de streaming verificado de Yanapak -->
+            <audio id="audio-player" src="https://radios.yanapak.org/kradio" preload="none"></audio>
             
             <button id="play-btn" class="control-btn play-btn" aria-label="Reproducir">
                 <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -69,17 +69,18 @@
 
         playBtn.addEventListener('click', () => {
             if (audio.paused) {
-                audio.src = "http://yanapak.org:8000/kradio.mp3?t=" + Date.now();
+                // Forzar recarga limpia para evitar caché previa del buffer
+                audio.src = "https://radios.yanapak.org/kradio?t=" + Date.now();
                 audio.play().then(() => {
                     playIcon.classList.add('hidden');
                     pauseIcon.classList.remove('hidden');
                     playerCard.classList.add('playing');
-                }).catch(e => {
-                    console.log("Error de reproducción:", e);
+                }).catch(err => {
+                    console.error("Error en reproducción:", err);
                 });
             } else {
                 audio.pause();
-                audio.src = "";
+                audio.src = ""; // Liberar el buffer del navegador
                 playIcon.classList.remove('hidden');
                 pauseIcon.classList.add('hidden');
                 playerCard.classList.remove('playing');
