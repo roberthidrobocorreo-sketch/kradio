@@ -34,8 +34,8 @@
         </section>
 
         <section class="audio-controls">
-            <!-- Usamos un elemento de audio nativo directo y seguro para Icecast -->
-            <audio id="audio-player" src="https://radios.yanapak.org/kradio.mp3" preload="none"></audio>
+            <!-- Enlace directo al servidor de Yanapak con extensión .mp3 -->
+            <audio id="audio-player" src="https://radios.yanapak.org/kradio.mp3"></audio>
             
             <button id="play-btn" class="control-btn play-btn" aria-label="Reproducir">
                 <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -61,7 +61,7 @@
 
     <script>
         const audio = document.getElementById('audio-player');
-        const playBtn = styleBtn = document.getElementById('play-btn');
+        const playBtn = document.getElementById('play-btn');
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
         const volumeSlider = document.getElementById('volume-slider');
@@ -69,19 +69,16 @@
 
         playBtn.addEventListener('click', () => {
             if (audio.paused) {
-                // Forzar la recarga agregando un parámetro de tiempo para evitar caché antigua
-                audio.src = "https://radios.yanapak.org/kradio.mp3?t=" + Date.now();
                 audio.play().then(() => {
                     playIcon.classList.add('hidden');
                     pauseIcon.classList.remove('hidden');
                     playerCard.classList.add('playing');
-                }).catch(err => {
-                    console.error("Error de reproducción:", err);
-                    alert("El navegador bloqueó la reproducción automática o butt no está emitiendo.");
+                }).catch(error => {
+                    console.error("Error al reproducir:", error);
+                    alert("Haz clic de nuevo o verifica que butt esté conectado transmitiendo.");
                 });
             } else {
                 audio.pause();
-                audio.src = "";
                 playIcon.classList.remove('hidden');
                 pauseIcon.classList.add('hidden');
                 playerCard.classList.remove('playing');
