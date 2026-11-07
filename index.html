@@ -18,6 +18,7 @@
 
         <section class="album-art-container">
             <div class="album-art">
+                <!-- La carátula se actualizará o mantendrá una imagen temática de K-Pop -->
                 <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop" alt="K-Pop Radio Live Cover" id="cover">
                 <div class="equalizer-overlay">
                     <div class="bar"></div>
@@ -29,13 +30,12 @@
         </section>
 
         <section class="track-info">
-            <h2 id="song-title">Top Hits 24/7</h2>
-            <p id="artist-name">Red Velvet, TWICE, aespa & More</p>
+            <h2 id="song-title">Cargando canción...</h2>
+            <p id="artist-name">K-POP PULSE RADIO</p>
         </section>
 
         <section class="audio-controls">
-            <!-- Enlace seguro de streaming verificado de Yanapak -->
-            <audio id="audio-player" src="https://radios.yanapak.org/kradio" preload="none"></audio>
+            <audio id="audio-player" src="https://radios.yanapak.org/kradio" preload="auto"></audio>
             
             <button id="play-btn" class="control-btn play-btn" aria-label="Reproducir">
                 <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -66,11 +66,11 @@
         const pauseIcon = document.getElementById('pause-icon');
         const volumeSlider = document.getElementById('volume-slider');
         const playerCard = document.querySelector('.player-card');
+        const songTitle = document.getElementById('song-title');
+        const artistName = document.getElementById('artist-name');
 
         playBtn.addEventListener('click', () => {
             if (audio.paused) {
-                // Forzar recarga limpia para evitar caché previa del buffer
-                audio.src = "https://radios.yanapak.org/kradio?t=" + Date.now();
                 audio.play().then(() => {
                     playIcon.classList.add('hidden');
                     pauseIcon.classList.remove('hidden');
@@ -80,7 +80,6 @@
                 });
             } else {
                 audio.pause();
-                audio.src = ""; // Liberar el buffer del navegador
                 playIcon.classList.remove('hidden');
                 pauseIcon.classList.add('hidden');
                 playerCard.classList.remove('playing');
@@ -90,6 +89,46 @@
         volumeSlider.addEventListener('input', (e) => {
             audio.volume = e.target.value;
         });
+
+        // Función para consultar los metadatos en vivo del servidor Icecast
+        function updateMetadata() {
+            // Icecast provee un endpoint en formato JSON con el estado general
+            fetch('https://radios.yanapak.org/status-json.xsl')
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.icestats) {
+                        let sources = data.icestats.source;
+                        // Aseguramos buscar el punto de montaje correcto (/kradio)
+                        if (!Array.isArray(sources)) {
+                            sources = [sources];
+                        }
+                        const currentStream = sources.find(s => s.listenurl && s.listenurl.includes('kradio'));
+                        
+                        if (currentStream && currentStream.title) {
+                            // Generalmente butt envía el formato "Artista - Canción" en el título
+                            const parts = currentStream.title.split('-');
+                            if (parts.length > 1) {
+                                artistName.textContent = parts[0].trim();
+                                songTitle.textContent = parts.slice(1).join('-').trim();
+                            } else {
+                                songTitle.textContent = currentStream.title;
+                                artistName.textContent = "K-POP PULSE RADIO";
+                            }
+                        } else {
+                            songTitle.textContent = "Top Hits 24/7";
+                            artistName.textContent = "Red Velvet, TWICE, aespa & More";
+                        }
+                    }
+                })
+                .catch(err => {
+                    // Si ocurre algún bloqueo de CORS temporal, mantiene texto por defecto sin romper la web
+                    console.log("No se pudieron obtener los metadatos en este ciclo.");
+                });
+        }
+
+        // Actualizar al cargar la página y luego cada 10 segundos
+        updateMetadata();
+        setInterval(updateMetadata, 10000);
     </script>
 </body>
 </html>
