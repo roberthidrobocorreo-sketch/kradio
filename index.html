@@ -18,7 +18,7 @@
 
         <section class="album-art-container">
             <div class="album-art">
-                <!-- La carátula se actualizará o mantendrá una imagen temática de K-Pop -->
+                <!-- La imagen se actualizará dinámicamente con la API -->
                 <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600&auto=format&fit=crop" alt="K-Pop Radio Live Cover" id="cover">
                 <div class="equalizer-overlay">
                     <div class="bar"></div>
@@ -68,6 +68,9 @@
         const playerCard = document.querySelector('.player-card');
         const songTitle = document.getElementById('song-title');
         const artistName = document.getElementById('artist-name');
+        const coverImg = document.getElementById('cover');
+
+        let lastTrackText = "";
 
         playBtn.addEventListener('click', () => {
             if (audio.paused) {
@@ -90,29 +93,59 @@
             audio.volume = e.target.value;
         });
 
-        // Función para consultar los metadatos en vivo del servidor Icecast
+        // Función para buscar la carátula usando la API pública de iTunes
+        function fetchAlbumArt(searchTerm) {
+            fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&entity=song&limit=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        let artworkUrl = data.results[0].artworkUrl100;
+                        // Cambiamos la resolución de 100x100 a 600x600 para que se vea nítida en alta calidad
+                        artworkUrl = artworkUrl.replace('100x100bb.jpg', '600x600bb.jpg');
+                        coverImg.src = artworkUrl;
+                    }
+                })
+                .catch(err => {
+                    console.log("No se pudo obtener la carátula de la API.");
+                });
+        }
+
+        // Consultar metadatos de Icecast
         function updateMetadata() {
-            // Icecast provee un endpoint en formato JSON con el estado general
             fetch('https://radios.yanapak.org/status-json.xsl')
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.icestats) {
                         let sources = data.icestats.source;
-                        // Aseguramos buscar el punto de montaje correcto (/kradio)
                         if (!Array.isArray(sources)) {
                             sources = [sources];
                         }
                         const currentStream = sources.find(s => s.listenurl && s.listenurl.includes('kradio'));
                         
                         if (currentStream && currentStream.title) {
-                            // Generalmente butt envía el formato "Artista - Canción" en el título
-                            const parts = currentStream.title.split('-');
-                            if (parts.length > 1) {
-                                artistName.textContent = parts[0].trim();
-                                songTitle.textContent = parts.slice(1).join('-').trim();
-                            } else {
-                                songTitle.textContent = currentStream.title;
-                                artistName.textContent = "K-POP PULSE RADIO";
+                            let rawTitle = currentStream.title;
+                            
+                            // Solo actualizamos y buscamos si la canción cambió
+                            if (rawTitle !== lastTrackText) {
+                                lastTrackText = rawTitle;
+                                const parts = rawTitle.split('-');
+                                
+                                let artist = "";
+                                let song = "";
+
+                                if (parts.length > 1) {
+                                    artist = parts[0].trim();
+                                    song = parts.slice(1).join('-').trim();
+                                    artistName.textContent = artist;
+                                    songTitle.textContent = song;
+                                } else {
+                                    song = rawTitle;
+                                    songTitle.textContent = song;
+                                    artistName.textContent = "K-POP PULSE RADIO";
+                                }
+
+                                // Llamamos a la API con el artista y la canción para obtener la carátula
+                                fetchAlbumArt(`${artist} ${song}`);
                             }
                         } else {
                             songTitle.textContent = "Top Hits 24/7";
@@ -121,12 +154,10 @@
                     }
                 })
                 .catch(err => {
-                    // Si ocurre algún bloqueo de CORS temporal, mantiene texto por defecto sin romper la web
-                    console.log("No se pudieron obtener los metadatos en este ciclo.");
+                    console.log("Error consultando metadatos.");
                 });
         }
 
-        // Actualizar al cargar la página y luego cada 10 segundos
         updateMetadata();
         setInterval(updateMetadata, 10000);
     </script>
