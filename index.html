@@ -34,7 +34,7 @@
         </section>
 
         <section class="audio-controls">
-            <!-- Enlace directo al servidor de Yanapak con extensión .mp3 -->
+            <!-- Enlace directo de Icecast con la extensión .mp3 -->
             <audio id="audio-player" src="https://radios.yanapak.org/kradio.mp3"></audio>
             
             <button id="play-btn" class="control-btn play-btn" aria-label="Reproducir">
@@ -73,9 +73,8 @@
                     playIcon.classList.add('hidden');
                     pauseIcon.classList.remove('hidden');
                     playerCard.classList.add('playing');
-                }).catch(error => {
-                    console.error("Error al reproducir:", error);
-                    alert("Haz clic de nuevo o verifica que butt esté conectado transmitiendo.");
+                }).catch(e => {
+                    console.log("Reproducción pausada por política del navegador:", e);
                 });
             } else {
                 audio.pause();
